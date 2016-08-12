@@ -1,0 +1,17 @@
+<html>
+<head>
+<title>Log file index</title>
+</head>
+<body>
+
+<h1>Logs (stored on {{ hostname }} in {{ log_dir }})</h1>
+
+<ul>
+{% for task_key in task_keys %}
+  <li><a href="logs/{{task_key}}">{{ task_key }}</a></li>
+{% endfor %}
+</ul>
+
+</body>
+
+</html>
