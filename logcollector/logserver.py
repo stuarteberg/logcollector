@@ -62,7 +62,18 @@ def show_log(task_key):
     return response
 
 if __name__ == '__main__':
-    PORT = 3000
-    print "Starting server on 0.0.0.0:{}".format(PORT)
+    import argparse
+    import sys
+    print sys.argv
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--port', default=3000)
+    parser.add_argument('--log-dir', default=LOG_DIR)
+    parser.add_argument('--debug-mode', action='store_true')
+    args = parser.parse_args()
+    
+    LOG_DIR = args.log_dir
+    
+    print "Starting server on 0.0.0.0:{}".format(args.port)
     print "Saving logs to {}".format( LOG_DIR )
-    app.run(host='0.0.0.0', port=PORT, debug=True)
+    app.run(host='0.0.0.0', port=args.port, debug=args.debug_mode)
