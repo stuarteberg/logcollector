@@ -1,7 +1,7 @@
 import os
 import time
 import logging
-from logcollector.client_utils import HTTPHandlerWithExtraData, logging_context, make_log_collecting_decorator
+from logcollector.client_utils import make_log_collecting_decorator
 
 def main():
     
