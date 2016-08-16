@@ -2,7 +2,7 @@ import os
 import tempfile
 import logging
 import socket
-from flask import Flask, request, render_template, abort, make_response
+from flask import Flask, request, render_template, abort, make_response, redirect, url_for
 
 app = Flask(__name__)
 
@@ -40,6 +40,10 @@ def receive_log_msg():
     formatted_record = FORMATTER.format(log_record)
     f.write( formatted_record + "\n" )
     return ""
+
+@app.route('/')
+def index():
+    return redirect(url_for('show_log_index'))
 
 @app.route('/logs')
 def show_log_index():
