@@ -1,17 +1,45 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>Log file index</title>
+  <title>Log file index</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta http-equiv="refresh" content="2" />
+
+  <!-- TODO: Use a local copy of bootstrap css instead of downloading from a CDN -->
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
 </head>
 <body>
 
-<h1>Logs (stored on {{ hostname }} in {{ log_dir }})</h1>
+<div class="container">
+  <h1>Logs</h1>
+  <h3>{{ hostname }}</h3>
+  <h3>{{ log_dir }}</h3>
 
-<ul>
-{% for task_key in task_keys %}
-  <li><a href="logs/{{task_key}}">{{ task_key }}</a></li>
-{% endfor %}
-</ul>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        {% for column_name in column_names %}
+          <th>{{column_name}}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for task_tuple in task_tuples %}
+        <tr>
+          <td><a href="logs/{{task_tuple[0]}}">{{ task_tuple[0] }}</a></td>
+      
+        {% for item in task_tuple[1:] %}
+          <td>{{ item }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
 </body>
-
 </html>

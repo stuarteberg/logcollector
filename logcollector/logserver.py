@@ -9,6 +9,8 @@ from flask import Flask, request, render_template, abort, make_response, redirec
 app = Flask(__name__)
 
 log_files = {} # { task_key : file object }
+statuses = {}
+last_msgs = {}
 
 LOG_DIR = tempfile.mkdtemp()
 
@@ -29,6 +31,8 @@ def receive_log_msg():
         log_path = os.path.join(LOG_DIR, task_key) + '.log'
         f = open(log_path, 'w+')
         log_files[task_key] = f
+        statuses[task_key] = ''
+        last_msgs[task_key] = ''
     
     log_record = logging.LogRecord( request.form['name'],
                                     int(request.form['levelno']),
@@ -41,6 +45,11 @@ def receive_log_msg():
     
     formatted_record = FORMATTER.format(log_record)
     f.write( formatted_record + "\n" )
+    last_msgs[task_key] = formatted_record
+    
+    if 'status' in request.form:
+        statuses[task_key] = request.form['status']
+    
     return ""
 
 @app.route('/')
@@ -49,10 +58,14 @@ def index():
 
 @app.route('/logs')
 def show_log_index():
+    column_names=['Task Name', 'Status', 'Last Msg']
+    task_keys = sorted(log_files.keys())
+    task_tuples = [(k, statuses[k], last_msgs[k]) for k in task_keys]
     return render_template('logs.html.jinja',
                            hostname=socket.gethostname(),
                            log_dir=LOG_DIR,
-                           task_keys=sorted(log_files.keys()))
+                           task_tuples=task_tuples,
+                           column_names=column_names)
 
 @app.route('/logs/<task_key>')
 def show_log(task_key):

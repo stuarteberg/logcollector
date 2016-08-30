@@ -24,7 +24,7 @@ def main():
         N_MSG = 30
         for i in range(30):
             time.sleep(1.0)
-            logger.info("Test message {}: with args: %s, %d".format( i ), 'hi', 42, extra={'progress': 100.*(i+1)/N_MSG})
+            logger.info("Test message {}: with args: %s, %d".format( i ), 'hi', 42, extra={'status': '{:.1f}'.format(100.*(i+1)/N_MSG)})
         print "DONE."
 
     # For this example, use the PID as the 'task_key'
