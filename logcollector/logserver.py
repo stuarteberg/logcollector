@@ -2,6 +2,8 @@ import os
 import tempfile
 import logging
 import socket
+import atexit
+import signal
 from flask import Flask, request, render_template, abort, make_response, redirect, url_for
 
 app = Flask(__name__)
@@ -65,6 +67,10 @@ def show_log(task_key):
     response.headers['Content-Type'] = 'text/plain'
     return response
 
+def flush_all():
+    for f in log_files.values():
+        f.flush()
+
 if __name__ == '__main__':
     import argparse
     import sys
@@ -77,6 +83,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     LOG_DIR = args.log_dir
+
+    atexit.register(flush_all)
+    
+    # Terminate results in normal shutdown
+    signal.signal(signal.SIGTERM, lambda signum, stack_frame: exit(1))
     
     print "Starting server on 0.0.0.0:{}".format(args.port)
     print "Saving logs to {}".format( LOG_DIR )
