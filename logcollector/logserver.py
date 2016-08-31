@@ -91,6 +91,9 @@ if __name__ == '__main__':
     import argparse
     import sys
     print sys.argv
+
+    # Don't log ordinary GET, POST, etc.
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
     
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', default=3000)
