@@ -49,6 +49,9 @@ def receive_log_msg():
     
     if 'status' in request.form:
         statuses[task_key] = request.form['status']
+    elif 'status=' in request.form['msg']:
+        status_start = request.form['msg'].find('status=') + len('status=')
+        statuses[task_key] = request.form['msg'][status_start:]
     
     return ""
 
