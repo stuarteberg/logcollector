@@ -31,7 +31,7 @@ class StatusInfo(object):
                                        duration_minutes,
                                        self.msg )
 
-@app.route('/logsink',methods=['POST'])
+@app.route('/logsink', methods=['POST'])
 def receive_log_msg():
     task_key = request.form['task_key']
     assert isinstance(task_key, basestring), \
@@ -98,6 +98,11 @@ def show_log(task_key):
     response = make_response(f.read())
     response.headers['Content-Type'] = 'text/plain'
     return response
+
+@app.route('/logs/flush', methods=['POST'])
+def flush():
+    flush_all()
+    return redirect(url_for('show_log_index'))
 
 def flush_all():
     for f in log_files.values():

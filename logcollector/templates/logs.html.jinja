@@ -18,6 +18,10 @@
   <h3>{{ hostname }}</h3>
   <h3>{{ log_dir }}</h3>
 
+  <form action="logs/flush" method="post">
+    <input type="submit" value="Flush all to disk">
+  </form>
+
   <table class="table table-striped">
     <thead>
       <tr>
