@@ -2,9 +2,3 @@ This module contains the following:
 
 - A convenience decorator to send all logging messages within a function over HTTP
 - A server to receive those log messages, cache them in local log files, and serve those log files over http. 
-
-Next steps:
-
-- Allow configuration of the local log file storage.
-- Define a simple protocol for "special" log messages for info on status and progress, and display that on the index page.
-- Server shutdown isn't thought out yet (when to shut down, close file handles, etc.)
