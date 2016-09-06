@@ -31,10 +31,8 @@
       {% for task_tuple in task_tuples %}
         <tr>
           <td class="text-nowrap"><a href="logs/{{task_tuple[0]}}">{{ task_tuple[0] }}</a></td>
-      
-        {% for item in task_tuple[1:] %}
-          <td class="text-nowrap">{{ item }}</td>
-        {% endfor %}
+          <td class="text-nowrap">{{task_tuple[1]}}</td>
+          <td class="text-nowrap">{{task_tuple[2]}}</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import tempfile
 import logging
 import socket
@@ -18,6 +19,17 @@ LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(message)s"
 #LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
 
 FORMATTER = logging.Formatter(LOG_MSG_FORMAT)
+
+class StatusInfo(object):
+    def __init__(self, msg):
+        self.msg = msg
+        self.timestamp = datetime.now()
+    
+    def __str__(self):
+        duration_minutes = (datetime.now() - self.timestamp).seconds // 60
+        return '[{}] [{}m] {}'.format( self.timestamp.strftime('%H:%M'),
+                                       duration_minutes,
+                                       self.msg )
 
 @app.route('/logsink',methods=['POST'])
 def receive_log_msg():
@@ -47,11 +59,15 @@ def receive_log_msg():
     f.write( formatted_record + "\n" )
     last_msgs[task_key] = formatted_record
     
+    status = ''
     if 'status' in request.form:
-        statuses[task_key] = request.form['status']
+        status = request.form['status']
     elif 'status=' in request.form['msg']:
         status_start = request.form['msg'].find('status=') + len('status=')
-        statuses[task_key] = request.form['msg'][status_start:]
+        status = request.form['msg'][status_start:]
+    
+    if status:
+        statuses[task_key] = StatusInfo(status) 
     
     return ""
 
