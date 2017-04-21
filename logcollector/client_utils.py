@@ -77,3 +77,8 @@ def make_log_collecting_decorator( server, port ):
             bla bla bla    
     """
     return partial(log_collecting_context, server, port)
+
+def noop_decorator(func):
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
