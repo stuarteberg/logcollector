@@ -1,6 +1,7 @@
 import logging
 from logging.handlers import HTTPHandler
 from functools import partial, wraps
+import threading
 
 class HTTPHandlerWithExtraData(HTTPHandler):
     """
@@ -16,6 +17,17 @@ class HTTPHandlerWithExtraData(HTTPHandler):
         record.__dict__.update(self.extra_data)
         return record.__dict__
 
+class LoggingThreadFilter(logging.Filter):
+    """
+    A logging filter that accepts only those messages which are emitted
+    within the same thread as the one that created this filter.
+    """
+    def __init__(self):
+        self.thread_ident = threading.current_thread().ident
+    
+    def filter(self, record):
+        return (threading.current_thread().ident == self.thread_ident)
+
 def logging_context(handler_factory=lambda *args, **kwargs: logging.StreamHandler()):
     """
     Returns a decorator.
@@ -30,7 +42,9 @@ def logging_context(handler_factory=lambda *args, **kwargs: logging.StreamHandle
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
+            thread_filter = LoggingThreadFilter()
             handler = handler_factory(*args, **kwargs)
+            handler.addFilter(thread_filter)
             logging.getLogger().addHandler(handler)
             try:
                 return func(*args, **kwargs)
