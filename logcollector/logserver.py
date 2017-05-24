@@ -1,7 +1,9 @@
 import os
+import time
 from datetime import datetime
 from collections import OrderedDict, defaultdict
 import tempfile
+import traceback
 import logging
 import socket
 import atexit
@@ -203,10 +205,24 @@ if __name__ == '__main__':
     
     print "Starting server on 0.0.0.0:{}".format(args.port)
     print "Saving logs to {}".format( LOG_DIR )
-    
-    try:
-        app.run(host='0.0.0.0', port=args.port, debug=args.debug_mode)
-    except:
-        import traceback
-        traceback.print_exc()
-        raise
+
+    # Auto-restart the server if it fails for some socket-related reason
+    while True:
+        try:
+            app.run(host='0.0.0.0', port=args.port, debug=args.debug_mode)
+        except socket.error as ex:
+            # Old versions of the flaskd debug server would crash with a socket.error [32]: Broken Pipe
+            # If the client connection died in the middle of a request.
+            # This code auto-restarts the server, but it shouldn't be as important for newer versions of flask.
+            traceback.print_exc()
+            print "************************************"
+            print "RESTARTING SERVER"
+            print "************************************"
+            time.sleep(5.0)
+            continue
+        except:
+            traceback.print_exc()
+            raise
+        else:
+            # Normal exit
+            break
