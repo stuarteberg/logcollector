@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from collections import OrderedDict, defaultdict
 import tempfile
 import logging
 import socket
@@ -9,11 +10,14 @@ from flask import Flask, request, render_template, abort, make_response, redirec
 
 app = Flask(__name__)
 
-log_files = {} # { task_key : file object }
-statuses = {}
-last_msgs = {}
+open_files = OrderedDict() # { task_key : file object }
+log_paths = {}
+
+statuses = defaultdict(lambda: StatusInfo(''))
+last_msgs = defaultdict(lambda: '')
 
 LOG_DIR = tempfile.mkdtemp()
+MAX_OPEN_FILES = 100
 
 LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(message)s"
 #LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
@@ -31,20 +35,51 @@ class StatusInfo(object):
                                        duration_minutes,
                                        self.msg )
 
+def get_log_file(task_key):
+    """
+    Returns a file handle for the given task_key, creating a new file if necessary.
+    Manages the rotating LRU cache of open file handles, in case too many files are opened simultaneously.
+    
+    Note: The returned file handle will only be valid temporarily.
+          You're not allowed to store it for future use.
+    """
+    if task_key in open_files:
+        # Move to the end of the OrderedDict and return
+        f = open_files[task_key]
+        del open_files[task_key]
+        open_files[task_key] = f
+        return f
+
+    # If we've already opened too many files, close some and discard them
+    while len(open_files) >= MAX_OPEN_FILES:
+        oldest_key = open_files.keys()[0]
+        oldest_file = open_files[oldest_key]
+        del open_files[oldest_key]
+        oldest_file.flush()
+        oldest_file.close()
+    
+    # Have we opened this file before?
+    if task_key in log_paths:
+        # Yes: Append.
+        f = open(log_paths[task_key], 'a+')
+    else:
+        # No: Overwrite.
+        log_path = os.path.join(LOG_DIR, task_key) + '.log'
+        log_paths[task_key] = log_path
+
+        f = open(log_path, 'w+')
+
+    open_files[task_key] = f
+    return f
+
+
 @app.route('/logsink', methods=['POST'])
 def receive_log_msg():
     task_key = request.form['task_key']
     assert isinstance(task_key, basestring), \
         "task_key must be a string"
     
-    try:
-        f = log_files[task_key]
-    except KeyError:
-        log_path = os.path.join(LOG_DIR, task_key) + '.log'
-        f = open(log_path, 'w+')
-        log_files[task_key] = f
-        statuses[task_key] = ''
-        last_msgs[task_key] = ''
+    f = get_log_file(task_key)
     
     log_record = logging.LogRecord( request.form['name'],
                                     int(request.form['levelno']),
@@ -78,7 +113,7 @@ def index():
 @app.route('/logs')
 def show_log_index():
     column_names=['Task Name', 'Status', 'Last Msg']
-    task_keys = sorted(log_files.keys())
+    task_keys = sorted(log_paths.keys())
     task_tuples = [(k, statuses[k], last_msgs[k]) for k in task_keys]
     return render_template('logs.html.jinja',
                            hostname=socket.gethostname(),
@@ -89,7 +124,7 @@ def show_log_index():
 @app.route('/logs/<task_key>')
 def show_log(task_key):
     try:
-        f = log_files[task_key]
+        f = get_log_file(task_key)
         f.flush()
     except KeyError:
         abort(404)
@@ -105,7 +140,7 @@ def flush():
     return redirect(url_for('show_log_index'))
 
 def flush_all():
-    for f in log_files.values():
+    for f in open_files.values():
         f.flush()
 
 if __name__ == '__main__':
@@ -119,10 +154,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', default=3000)
     parser.add_argument('--log-dir', default=LOG_DIR)
+    parser.add_argument('--max-open-files', default=100)
     parser.add_argument('--debug-mode', action='store_true')
     args = parser.parse_args()
     
     LOG_DIR = args.log_dir
+    MAX_OPEN_FILES = args.max_open_files
 
     atexit.register(flush_all)
     
