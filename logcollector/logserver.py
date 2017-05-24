@@ -168,4 +168,10 @@ if __name__ == '__main__':
     
     print "Starting server on 0.0.0.0:{}".format(args.port)
     print "Saving logs to {}".format( LOG_DIR )
-    app.run(host='0.0.0.0', port=args.port, debug=args.debug_mode)
+    
+    try:
+        app.run(host='0.0.0.0', port=args.port, debug=args.debug_mode)
+    except:
+        import traceback
+        traceback.print_exc()
+        raise
