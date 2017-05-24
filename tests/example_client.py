@@ -35,9 +35,9 @@ def main():
         print "DONE."
 
     threads = []
-    for i in range(20):
+    for i in range(100):
         # Use i as the 'task_key'
-        func = partial(do_some_stuff, '{:02d}'.format(i), 'foo', 'bar')
+        func = partial(do_some_stuff, '{:03d}'.format(i), 'foo', 'bar')
         threads.append(threading.Thread(target=func))
 
     for t in threads:
