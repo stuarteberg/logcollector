@@ -220,6 +220,8 @@ if __name__ == '__main__':
             print "************************************"
             time.sleep(5.0)
             continue
+        except (SystemExit, KeyboardInterrupt):
+            break
         except:
             traceback.print_exc()
             raise
