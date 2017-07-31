@@ -1,3 +1,5 @@
+from __future__ import print_function
+import sys
 import os
 import time
 from datetime import datetime
@@ -9,6 +11,9 @@ import socket
 import atexit
 import signal
 from flask import Flask, request, render_template, abort, make_response, redirect, url_for
+
+if sys.version_info.major > 2:
+    unicode = str
 
 app = Flask(__name__)
 
@@ -54,7 +59,7 @@ def get_log_file(task_key):
 
     # If we've already opened too many files, close some and discard them
     while len(open_files) >= MAX_OPEN_FILES:
-        oldest_key = open_files.keys()[0]
+        oldest_key = next(iter(open_files.keys()))
         oldest_file = open_files[oldest_key]
         del open_files[oldest_key]
         oldest_file.flush()
@@ -78,8 +83,8 @@ def get_log_file(task_key):
 @app.route('/logsink', methods=['POST'])
 def receive_log_msg():
     task_key = request.form['task_key']
-    assert isinstance(task_key, basestring), \
-        "task_key must be a string"
+    assert isinstance(task_key, (bytes, unicode)), \
+        "task_key must be a string, not {}".format(type(task_key))
     
     f = get_log_file(task_key)
     
@@ -159,7 +164,7 @@ def connect_debugger():
                         "/usr/local/eclipse/plugins/org.python.pydev_4.2.0.201507041133/pysrc/",
                         '/Users/bergs/.p2/pool/plugins/org.python.pydev_5.5.0.201701191708/pysrc/' ]
 
-    pydev_src_paths = filter(os.path.exists, pydev_src_paths)
+    pydev_src_paths = list(filter(os.path.exists, pydev_src_paths))
     
     if not pydev_src_paths:
         raise RuntimeError("Error: Couldn't find the path to the pydev module.  You can't use PYDEV_DEBUGGER_ENABLED.")
@@ -169,7 +174,7 @@ def connect_debugger():
     
     sys.path.append(pydev_src_paths[0])
     import pydevd
-    print "Waiting for PyDev debugger..."
+    print("Waiting for PyDev debugger...")
     pydevd.settrace(stdoutToServer=True, stderrToServer=True, suspend=False)
 
 if int(os.getenv('PYDEV_DEBUGGER_ENABLED', 0)):
@@ -183,7 +188,7 @@ if int(os.getenv('PYDEV_DEBUGGER_ENABLED', 0)):
 if __name__ == '__main__':
     import argparse
     import sys
-    print sys.argv
+    print(sys.argv)
 
     # Don't log ordinary GET, POST, etc.
     logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -203,8 +208,8 @@ if __name__ == '__main__':
     # Terminate results in normal shutdown
     signal.signal(signal.SIGTERM, lambda signum, stack_frame: exit(1))
     
-    print "Starting server on 0.0.0.0:{}".format(args.port)
-    print "Saving logs to {}".format( LOG_DIR )
+    print("Starting server on 0.0.0.0:{}".format(args.port))
+    print("Saving logs to {}".format( LOG_DIR ))
 
     # Auto-restart the server if it fails for some socket-related reason
     while True:
@@ -215,9 +220,9 @@ if __name__ == '__main__':
             # If the client connection died in the middle of a request.
             # This code auto-restarts the server, but it shouldn't be as important for newer versions of flask.
             traceback.print_exc()
-            print "************************************"
-            print "RESTARTING SERVER"
-            print "************************************"
+            print("************************************")
+            print("RESTARTING SERVER")
+            print("************************************")
             time.sleep(5.0)
             continue
         except (SystemExit, KeyboardInterrupt):

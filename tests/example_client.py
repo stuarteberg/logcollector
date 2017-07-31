@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import sys
 import time
@@ -26,13 +27,13 @@ def main():
     
     @send_log_with_key(lambda task_key, *args, **kwargs: task_key)
     def do_some_stuff(task_key, other_param, other_param2):
-        print "STARTING task {}...".format(task_key)
+        print("STARTING task {}...".format(task_key))
         N_MSG = 30
         for i in range(30):
             time.sleep(1.0)
             logger.info("Task {}:({}) Test message {}: with args: %s, %d".format(task_key, threading.current_thread().ident, i ),
                         'hi', 42, extra={'status': '{:.1f}'.format(100.*(i+1)/N_MSG)})
-        print "DONE."
+        print("DONE.")
 
     threads = []
     for i in range(100):

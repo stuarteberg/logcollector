@@ -17,10 +17,10 @@ build:
 
 requirements:
   build:
-    - python 2.7*
+    - python {{PY_VER}}*
 
   run:
-    - python 2.7*
+    - python {{PY_VER}}*
     - flask
     - jinja2
 
