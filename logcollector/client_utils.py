@@ -1,7 +1,7 @@
 import logging
-from logging.handlers import HTTPHandler
-from functools import partial, wraps
 import threading
+from functools import partial, wraps
+from logging.handlers import HTTPHandler
 
 class HTTPHandlerWithExtraData(HTTPHandler):
     """
@@ -13,9 +13,50 @@ class HTTPHandlerWithExtraData(HTTPHandler):
         super(HTTPHandlerWithExtraData, self).__init__(host, url, method)
         self.extra_data = extra_data
 
+    def emit(self, record):
+        super().emit(record)
+
     def mapLogRecord(self, record):
         record.__dict__.update(self.extra_data)
         return record.__dict__
+
+try:
+    import requests
+except ImportError:
+    pass
+else:
+    class JSONHttpHandler(logging.Handler):
+        """
+        Just like the above HTTPHandlerWithExtraData, but info is sent via
+        json data in the request body instead of via a 'form'.
+        (The logserver accepts either format.)
+        """
+        def __init__(self, extra_data, host, url, method='POST'):
+            super().__init__()
+            self.method = method
+            self.extra_data = extra_data
+            self.host = host
+            self.url = url
+            
+            if not self.host.startswith('http://'):
+                self.host = 'http://' + self.host
+            
+        def emit(self, record):
+            try:
+                data = { 'name': record.name,
+                         'levelno': record.levelno,
+                         'pathname': record.pathname,
+                         'lineno' : record.lineno,
+                         'msg': record.msg,
+                         'args': repr(record.args),
+                         'exc_info': None,
+                         'funcName': record.funcName}
+        
+                data.update(self.extra_data)
+        
+                requests.request(self.method, self.host + self.url, json=data )
+            except Exception:
+                self.handleError(record)
 
 class LoggingThreadFilter(logging.Filter):
     """

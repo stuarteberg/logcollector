@@ -82,31 +82,36 @@ def get_log_file(task_key):
 
 @app.route('/logsink', methods=['POST'])
 def receive_log_msg():
-    task_key = request.form['task_key']
+    if request.json:
+        data = request.json
+    else:
+        data = request.form
+
+    task_key = data['task_key']
     assert isinstance(task_key, (bytes, unicode)), \
         "task_key must be a string, not {}".format(type(task_key))
     
     f = get_log_file(task_key)
     
-    log_record = logging.LogRecord( request.form['name'],
-                                    int(request.form['levelno']),
-                                    request.form['pathname'],
-                                    int(request.form['lineno']),
-                                    request.form['msg'],
-                                    eval(request.form['args']),
+    log_record = logging.LogRecord( data['name'],
+                                    int(data['levelno']),
+                                    data ['pathname'],
+                                    int(data['lineno']),
+                                    data['msg'],
+                                    eval(data['args']),
                                     exc_info=None,
-                                    func=request.form['funcName'] )
+                                    func=data['funcName'] )
     
     formatted_record = FORMATTER.format(log_record)
     f.write( formatted_record + "\n" )
     last_msgs[task_key] = formatted_record
     
     status = ''
-    if 'status' in request.form:
-        status = request.form['status']
-    elif 'status=' in request.form['msg']:
-        status_start = request.form['msg'].find('status=') + len('status=')
-        status = request.form['msg'][status_start:]
+    if 'status' in data:
+        status = data['status']
+    elif 'status=' in data['msg']:
+        status_start = data['msg'].find('status=') + len('status=')
+        status = data['msg'][status_start:]
     
     if status:
         statuses[task_key] = StatusInfo(status) 
