@@ -12,6 +12,7 @@ source:
   path: ../
 
 build:
+  noarch: python
   number: 0
   string: py{{py}}_{{PKG_BUILDNUM}}_g{{GIT_FULL_HASH[:7]}}
 
