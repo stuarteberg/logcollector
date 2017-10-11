@@ -3,6 +3,33 @@ import threading
 from functools import partial, wraps
 from logging.handlers import HTTPHandler
 
+def get_localhost_ip_address():
+    """
+    Return this machine's own IP address, as seen from the network
+    (e.g. 192.168.1.152, not 127.0.0.1)
+    """
+    import socket
+    try:
+        # Determine our own machine's IP address
+        # This method is a little hacky because it requires
+        # making a connection to some arbitrary external site,
+        # but it seems to be more reliable than the method below. 
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("google.com",80))
+        ip_addr = s.getsockname()[0]
+        s.close()
+        
+    except socket.gaierror:
+        # Warning: This method is simpler, but unreliable on some networks.
+        #          For example, on a home Verizon FiOS network it will error out in the best case,
+        #          or return the wrong IP in the worst case (if you haven't disabled their DNS
+        #          hijacking on your router)
+        ip_addr = socket.gethostbyname(socket.gethostname())
+    
+    return ip_addr
+
+localhost_ip = get_localhost_ip_address()
+
 class HTTPHandlerWithExtraData(HTTPHandler):
     """
     Simple subclass of HTTPHandler that adds extra
@@ -10,7 +37,22 @@ class HTTPHandlerWithExtraData(HTTPHandler):
     The fields are specified upon construction.
     """
     def __init__(self, extra_data, host, url, method='GET'):
-        super(HTTPHandlerWithExtraData, self).__init__(host, url, method)
+        host = host.split('://')[-1]
+        if ':' in host:
+            host, port = host.split(':')
+        else:
+            port = None
+
+        if host == localhost_ip:
+            # If we're logging to our own machine (e.g. during testing),
+            # it's more reliable under various network environments to use 0.0.0.0
+            # (Things get weird if you're using a VPN, for instance.)
+            host = '0.0.0.0'
+
+        if port:
+            fullhost = '0.0.0.0:{}'.format(port)
+
+        super(HTTPHandlerWithExtraData, self).__init__(fullhost, url, method)
         self.extra_data = extra_data
 
     def emit(self, record):
@@ -33,9 +75,25 @@ else:
         """
         def __init__(self, extra_data, host, url, method='POST'):
             super().__init__()
+
+            host = host.split('://')[-1]
+            if ':' in host:
+                host, port = host.split(':')
+            else:
+                port = None
+    
+            if host == localhost_ip:
+                # If we're logging to our own machine (e.g. during testing),
+                # it's more reliable under various network environments to use 0.0.0.0
+                # (Things get weird if you're using a VPN, for instance.)
+                host = '0.0.0.0'
+    
+            if port:
+                fullhost = '0.0.0.0:{}'.format(port)
+
             self.method = method
             self.extra_data = extra_data
-            self.host = host
+            self.host = fullhost
             self.url = url
             
             if not self.host.startswith('http://'):
