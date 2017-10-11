@@ -51,6 +51,8 @@ class HTTPHandlerWithExtraData(HTTPHandler):
 
         if port:
             fullhost = '0.0.0.0:{}'.format(port)
+        else:
+            fullhost = host
 
         super(HTTPHandlerWithExtraData, self).__init__(fullhost, url, method)
         self.extra_data = extra_data
@@ -90,6 +92,8 @@ else:
     
             if port:
                 fullhost = '0.0.0.0:{}'.format(port)
+            else:
+                fullhost = host
 
             self.method = method
             self.extra_data = extra_data
