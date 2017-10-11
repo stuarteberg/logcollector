@@ -50,7 +50,7 @@ class HTTPHandlerWithExtraData(HTTPHandler):
             host = '0.0.0.0'
 
         if port:
-            fullhost = '0.0.0.0:{}'.format(port)
+            fullhost = '{}:{}'.format(host, port)
         else:
             fullhost = host
 
@@ -91,7 +91,7 @@ else:
                 host = '0.0.0.0'
     
             if port:
-                fullhost = '0.0.0.0:{}'.format(port)
+                fullhost = '{}:{}'.format(host, port)
             else:
                 fullhost = host
 
