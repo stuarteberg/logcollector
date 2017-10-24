@@ -8,7 +8,6 @@ import tempfile
 import traceback
 import logging
 import socket
-import atexit
 import signal
 from flask import Flask, request, render_template, abort, make_response, redirect, url_for
 
@@ -149,12 +148,32 @@ def show_log(task_key):
 @app.route('/logs/flush', methods=['POST'])
 def flush():
     flush_all()
+    close_all()
     return redirect(url_for('show_log_index'))
 
 def flush_all():
     for f in open_files.values():
         f.flush()
 
+def close_all():
+    global open_files
+    _open_files = open_files
+    open_files = OrderedDict()
+
+    for f in _open_files.values():
+        f.close()
+
+def shutdown_server():
+    func = request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    shutdown_server()
+    close_all()
+    return 'Server shutting down...'
 
 ##
 ## ECLIPSE DEBUGGING CODE
@@ -208,8 +227,6 @@ if __name__ == '__main__':
     LOG_DIR = args.log_dir
     MAX_OPEN_FILES = args.max_open_files
 
-    atexit.register(flush_all)
-    
     # Terminate results in normal shutdown
     signal.signal(signal.SIGTERM, lambda signum, stack_frame: exit(1))
     
@@ -220,6 +237,8 @@ if __name__ == '__main__':
     while True:
         try:
             app.run(host='0.0.0.0', port=args.port, debug=args.debug_mode)
+            print("Exiting normally.")
+            break
         except socket.error as ex:
             # Old versions of the flaskd debug server would crash with a socket.error [32]: Broken Pipe
             # If the client connection died in the middle of a request.
@@ -230,11 +249,11 @@ if __name__ == '__main__':
             print("************************************")
             time.sleep(5.0)
             continue
-        except (SystemExit, KeyboardInterrupt):
+        except (SystemExit, KeyboardInterrupt) as ex:
+            print("Log server killed via external signal: {}".format(ex.__class__.__name__))
             break
         except:
             traceback.print_exc()
             raise
-        else:
-            # Normal exit
-            break
+        finally:
+            close_all()
