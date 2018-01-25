@@ -25,10 +25,10 @@ last_msgs = defaultdict(lambda: '')
 LOG_DIR = tempfile.mkdtemp()
 MAX_OPEN_FILES = 100
 
-LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(message)s"
-#LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
+DEFAULT_LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(message)s"
+#DEFAULT_LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
 
-FORMATTER = logging.Formatter(LOG_MSG_FORMAT)
+FORMATTER = logging.Formatter(DEFAULT_LOG_MSG_FORMAT)
 
 class StatusInfo(object):
     def __init__(self, msg):
