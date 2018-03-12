@@ -129,7 +129,6 @@ def index():
 
 @app.route('/logs')
 def show_log_index():
-    print(request.date)
     column_names=['Task Name', 'Status', 'Last Msg']
     task_keys = sorted(log_paths.keys())
     task_tuples = [(k, statuses[k], last_msgs[k]) for k in task_keys]
