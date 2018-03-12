@@ -36,7 +36,8 @@ class HTTPHandlerWithExtraData(HTTPHandler):
     fields to the LogRecord before sending it.
     The fields are specified upon construction.
     """
-    def __init__(self, extra_data, host, url, method='GET'):
+    def __init__(self, extra_data, echo_threshold, host, url, method='GET'):
+        self.echo_threshold = echo_threshold
         host = host.split('://')[-1]
         if ':' in host:
             host, port = host.split(':')
@@ -62,6 +63,7 @@ class HTTPHandlerWithExtraData(HTTPHandler):
 
     def mapLogRecord(self, record):
         record.__dict__.update(self.extra_data)
+        record.echo_on_console = (record.levelno >= self.echo_threshold)
         return record.__dict__
 
 try:
@@ -158,7 +160,7 @@ def logging_context(handler_factory=lambda *args, **kwargs: logging.StreamHandle
         return wrapper
     return decorator
 
-def log_collecting_context(server, port, task_key_factory=lambda *args, **kwargs: args[0]):
+def log_collecting_context(server, port, echo_threshold=logging.ERROR, task_key_factory=lambda *args, **kwargs: args[0]):
     """
     Returns a decorator.
     
@@ -168,12 +170,13 @@ def log_collecting_context(server, port, task_key_factory=lambda *args, **kwargs
     def create_handler(*args, **kwargs):
         return HTTPHandlerWithExtraData(
             { 'task_key': task_key_factory(*args, **kwargs) },
+            echo_threshold,
             "{}:{}".format(server, port),
             '/logsink',
             'POST' )
     return logging_context(create_handler)
 
-def make_log_collecting_decorator( server, port ):
+def make_log_collecting_decorator( server, port, echo_threshold=logging.ERROR ):
     """
     Returns the log_collecting_context function from above,
     but with pre-configured server and port.
@@ -193,7 +196,7 @@ def make_log_collecting_decorator( server, port ):
         def my_processing_function2(task_key, foo, bar):
             bla bla bla    
     """
-    return partial(log_collecting_context, server, port)
+    return partial(log_collecting_context, server, port, echo_threshold)
 
 def noop_decorator(func):
     def wrapper(*args, **kwargs):

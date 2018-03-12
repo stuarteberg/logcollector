@@ -25,7 +25,7 @@ last_msgs = defaultdict(lambda: '')
 LOG_DIR = tempfile.mkdtemp()
 MAX_OPEN_FILES = 100
 
-DEFAULT_LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(message)s"
+DEFAULT_LOG_MSG_FORMAT = '%(levelname)s [%(asctime)s] %(message)s'
 #DEFAULT_LOG_MSG_FORMAT = "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
 
 FORMATTER = logging.Formatter(DEFAULT_LOG_MSG_FORMAT)
@@ -94,7 +94,7 @@ def receive_log_msg():
     
     log_record = logging.LogRecord( data['name'],
                                     int(data['levelno']),
-                                    data ['pathname'],
+                                    data['pathname'],
                                     int(data['lineno']),
                                     data['msg'],
                                     eval(data['args']),
@@ -103,6 +103,12 @@ def receive_log_msg():
     
     formatted_record = FORMATTER.format(log_record)
     f.write( formatted_record + "\n" )
+
+    # When the child logs a message, this flag tells us to echo the message
+    # onto the console in addition to writing it to the appropriate file.
+    if data['echo_on_console'] in (True, 'true', 'True'):
+        sys.stdout.write(formatted_record + "\n")
+    
     last_msgs[task_key] = formatted_record
     
     status = ''
@@ -123,6 +129,7 @@ def index():
 
 @app.route('/logs')
 def show_log_index():
+    print(request.date)
     column_names=['Task Name', 'Status', 'Last Msg']
     task_keys = sorted(log_paths.keys())
     task_tuples = [(k, statuses[k], last_msgs[k]) for k in task_keys]
@@ -226,7 +233,6 @@ if __name__ == '__main__':
     
     LOG_DIR = args.log_dir
     MAX_OPEN_FILES = args.max_open_files
-
     # Terminate results in normal shutdown
     signal.signal(signal.SIGTERM, lambda signum, stack_frame: exit(1))
     
