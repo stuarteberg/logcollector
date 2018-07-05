@@ -92,12 +92,17 @@ def receive_log_msg():
     
     f = get_log_file(task_key)
     
+    try:
+        args = eval(data['args'])
+    except:
+        args = ['<<logcollector.logserver.receive_log_msg: Could not interpret args>>']
+    
     log_record = logging.LogRecord( data['name'],
                                     int(data['levelno']),
                                     data['pathname'],
                                     int(data['lineno']),
                                     data['msg'],
-                                    eval(data['args']),
+                                    args,
                                     exc_info=None,
                                     func=data['funcName'] )
     
